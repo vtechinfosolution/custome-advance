@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:barn="http://www.mulesoft.org/schema/mule/barn" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:mule-ss="http://www.mulesoft.org/schema/mule/spring-security"
+	xmlns:ss="http://www.springframework.org/schema/security" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/spring-security http://www.mulesoft.org/schema/mule/spring-security/current/mule-spring-security.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ssl http://www.mulesoft.org/schema/mule/ssl/3.8/mule-ssl.xsd
+http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/barn http://www.mulesoft.org/schema/mule/barn/current/mule-barn.xsd">
+	<spring:beans>
+		<ss:authentication-manager alias="authenticationManager">
+			<ss:authentication-provider>
+				<ss:user-service id="userService">
+					<ss:user name="admin" password="admin" authorities="ROLE_ADMIN" />
+					<ss:user name="user1" password="work4proj" authorities="ROLE_DEV" />
+				</ss:user-service>
+			</ss:authentication-provider>
+		</ss:authentication-manager>
+	</spring:beans>
+
+
+	<mule-ss:security-manager name="muleSecurityManager"
+		doc:name="Spring Security Provider">
+		<mule-ss:delegate-security-provider
+			name="memory-provider" delegate-ref="authenticationManager" />
+	</mule-ss:security-manager>
+
+	<http:listener-config name="HTTP_Listener_Configuration"
+		host="0.0.0.0" port="8088" doc:name="HTTP Listener Configuration" >
+    </http:listener-config>
+
+	<spring:beans>
+		<spring:bean class="com.custome.ExampleInvoke" name="customeInvokeTest">
+			<spring:property name="company" value="RAVE" />
+		</spring:bean>
+	</spring:beans>
+    <barn:config name="Barn__Configuration" doc:name="Barn: Configuration"/>
+	<flow name="custome-advanceFlow">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/customeTransformer" doc:name="HTTP" />
+		<set-variable variableName="name" value="#['Vikash']"
+			doc:name="Variable" />
+		<custom-transformer returnClass="com.custome.Student"
+			class="com.custome.CustomeStudent" doc:name="Java" />
+		<object-to-string-transformer doc:name="Object to String" />
+	</flow>
+	<flow name="custome-advanceFlow1">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/customeComponent" doc:name="HTTP" />
+		<set-variable variableName="code" value="#['rave']"
+			doc:name="Variable" />
+		<component class="com.custome.ExampleComponent" doc:name="Java" />
+		<logger level="INFO" doc:name="Logger" />
+	</flow>
+	<flow name="custome-advanceFlow2">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/cutomeInvoke" doc:name="HTTP" />
+		<http:basic-security-filter realm="mule-realm"/>	
+		<set-variable variableName="test" value="#['ACS']"
+			doc:name="Variable" />
+		<custom-filter class="com.custome.ExampleCustome"
+			doc:name="Custom" />
+		<invoke object-ref="customeInvokeTest" method="getName"
+			doc:name="Invoke" />
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<invoke object-ref="customeInvokeTest" method="getName"
+			methodArguments="Rakesh" doc:name="Invoke" />
+		<logger message="#[flowVars]" level="INFO" doc:name="Logger" />
+	</flow>
+	<flow name="custome-advanceFlow3">
+		<http:listener config-ref="HTTP_Listener_Configuration"
+			path="/customeProcessor" doc:name="HTTP" />
+		<set-variable variableName="code" value="#['NPS']"
+			doc:name="Variable" />
+		<custom-processor class="com.custome.ExampleProcessor"
+			doc:name="Custom Processor" />
+		<logger message="#[flowVars.code+'#####'+flowVars.name]" level="INFO"
+			doc:name="Logger" />
+		<set-payload value="#[flowVars.code+'#####'+flowVars.name]"
+			doc:name="Set Payload" />
+	</flow>
+    <flow name="custome-advance-oauth2">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/customeConnector" doc:name="HTTP"/>
+        <barn:put-in-barn config-ref="Barn__Configuration"  doc:name="Barn" animal="QWERTY"/>
+    </flow>
+
+</mule>
